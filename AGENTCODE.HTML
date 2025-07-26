@@ -574,17 +574,153 @@
       transition: background 0.5s;
     }
     .ai-step-code {
-      background: #222;
-      color: #fff;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: #e8e8f0;
+      padding: 1.25rem;
+      border-radius: 0 0 12px 12px;
+      border: 1px solid var(--border-color);
+      border-top: none;
       font-family: var(--font-mono);
-      font-size: 13px;
-      max-height: 220px;
+      font-size: 14px;
+      max-height: 300px;
       overflow: auto;
-      margin-bottom: 0.5rem;
+      margin: 0;
       direction: ltr;
       white-space: pre;
+      position: relative;
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      line-height: 1.6;
+    }
+    
+    .ai-step-code:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-xl);
+      border-color: var(--primary-color);
+    }
+    
+    .ai-step-code::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+      border-radius: 12px 12px 0 0;
+    }
+    
+    .step-result-container {
+      background: var(--ai-message-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1rem;
+      margin: 1rem 0;
+      position: relative;
+      box-shadow: var(--shadow-md);
+    }
+    
+    .step-result-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .step-result-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--success-color), #10b981);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    
+    .step-result-title {
+      font-weight: 600;
+      color: var(--success-color);
+      font-size: 1rem;
+    }
+    
+    .step-result-description {
+      color: #888;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+    
+    .code-preview-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1rem 0 0.5rem 0;
+      justify-content: flex-start;
+    }
+    
+    .code-action-btn {
+      background: var(--button-bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .code-action-btn:hover {
+      background: var(--button-hover-bg-color);
+      transform: translateY(-1px);
+    }
+    
+    .code-action-btn.primary {
+      background: var(--primary-color);
+      color: white;
+    }
+    
+    .code-action-btn.primary:hover {
+      background: var(--primary-hover-color);
+    }
+    
+    .code-container {
+      position: relative;
+    }
+    
+    .code-stats {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--glass-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px 8px 0 0;
+      padding: 0.5rem 1rem;
+      font-size: 0.8rem;
+      color: #888;
+      font-family: var(--font-mono);
+    }
+    
+    .lines-count, .chars-count {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .lines-count::before {
+      content: '📄';
+      font-size: 0.9rem;
+    }
+    
+    .chars-count::before {
+      content: '📝';
+      font-size: 0.9rem;
     }
     
     /* General modern enhancements */
@@ -611,6 +747,27 @@
 
     ::-webkit-scrollbar-thumb:hover {
       background: #777;
+    }
+    
+    /* Scrollbar خاص بمربع الكود */
+    .ai-step-code::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .ai-step-code::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    .ai-step-code::-webkit-scrollbar-thumb {
+      background: var(--primary-color);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ai-step-code::-webkit-scrollbar-thumb:hover {
+      background: var(--primary-hover-color);
     }
 
     /* Better focus outline for accessibility and aesthetics */
@@ -1274,12 +1431,53 @@
         messageEl.classList.add('loading');
         messageEl.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
       } else if (sender === 'ai' && text.startsWith('الكود بعد تنفيذ الخطوة:')) {
-        // عرض الكود في مربع متقلص وجميل
+        // عرض الكود في تصميم أنيق ومحسن
         const code = text.replace(/^الكود بعد تنفيذ الخطوة:\s*/,'');
-        messageEl.innerHTML = `<div style="margin-bottom:0.5rem; color:#aaa; font-size:13px;">الكود بعد تنفيذ الخطوة:</div><pre class="ai-step-code"><code>${code.replace(/[&<>]/g, function(tag) {
-          const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
-          return charsToReplace[tag] || tag;
-        })}</code></pre>`;
+        const stepNumber = (sessions[currentSessionId]?.messages.filter(m => m.text.startsWith('الكود بعد تنفيذ الخطوة:')).length || 0) + 1;
+        
+        messageEl.innerHTML = `
+          <div class="step-result-container">
+            <div class="step-result-header">
+              <div class="step-result-icon">✅</div>
+              <div>
+                <div class="step-result-title">تم تنفيذ الخطوة ${stepNumber} بنجاح</div>
+                <div class="step-result-description">تم تطبيق التحديثات على الكود</div>
+              </div>
+            </div>
+            
+            <div class="code-preview-actions">
+              <button class="code-action-btn primary" onclick="copyCodeToClipboard(this)" data-code="${encodeURIComponent(code)}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                نسخ الكود
+              </button>
+              <button class="code-action-btn" onclick="toggleCodeVisibility(this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <span>إخفاء الكود</span>
+              </button>
+              <button class="code-action-btn" onclick="formatCodeDisplay(this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 18 22 12 16 6"></polyline>
+                  <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                تنسيق الكود
+              </button>
+            </div>
+            
+                         <div class="code-container">
+               <div class="code-stats">
+                 <span class="lines-count">${code.split('\n').length} سطر</span>
+                 <span class="chars-count">${code.length} حرف</span>
+               </div>
+               <pre class="ai-step-code" id="step-code-${Date.now()}"><code>${escapeHtml(code)}</code></pre>
+             </div>
+          </div>
+        `;
       } else if (sender === 'ai' && sessions[currentSessionId] && sessions[currentSessionId].messages[sessions[currentSessionId].messages.length-1]?.text === text) {
         // Typewriter effect ONLY for the latest AI message
         let i = 0;
@@ -1299,6 +1497,95 @@
       messagesContainer.appendChild(messageEl);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
       return messageEl;
+    }
+    
+    // دالة مساعدة لتشفير HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // دوال تفاعلية لأزرار الكود
+    function copyCodeToClipboard(button) {
+      const code = decodeURIComponent(button.dataset.code);
+      navigator.clipboard.writeText(code).then(() => {
+        const originalText = button.innerHTML;
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          تم النسخ!
+        `;
+        button.style.background = 'var(--success-color)';
+        
+        setTimeout(() => {
+          button.innerHTML = originalText;
+          button.style.background = '';
+        }, 2000);
+      }).catch(err => {
+        console.error('فشل في نسخ الكود:', err);
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          فشل النسخ
+        `;
+      });
+    }
+    
+    function toggleCodeVisibility(button) {
+      const container = button.closest('.step-result-container');
+      const codeElement = container.querySelector('.ai-step-code');
+      const span = button.querySelector('span');
+      
+      if (codeElement.style.display === 'none') {
+        codeElement.style.display = 'block';
+        span.textContent = 'إخفاء الكود';
+        button.querySelector('svg').innerHTML = `
+          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        `;
+      } else {
+        codeElement.style.display = 'none';
+        span.textContent = 'إظهار الكود';
+        button.querySelector('svg').innerHTML = `
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+          <line x1="1" y1="1" x2="23" y2="23"></line>
+        `;
+      }
+    }
+    
+    function formatCodeDisplay(button) {
+      const container = button.closest('.step-result-container');
+      const codeElement = container.querySelector('.ai-step-code code');
+      
+      if (codeElement) {
+        // إعادة تنسيق الكود بـ highlight.js
+        hljs.highlightElement(codeElement);
+        
+        // تأثير بصري للإشارة إلى أن التنسيق تم
+        button.style.background = 'var(--success-color)';
+        button.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          تم التنسيق!
+        `;
+        
+        setTimeout(() => {
+          button.style.background = '';
+          button.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"></polyline>
+              <polyline points="8 6 2 12 8 18"></polyline>
+            </svg>
+            تنسيق الكود
+          `;
+        }, 2000);
+      }
     }
     
     function addMessageToState(text, sender) {

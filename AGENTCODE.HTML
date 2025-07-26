@@ -723,6 +723,206 @@
       font-size: 0.9rem;
     }
     
+    /* Diff View Styles */
+    .diff-container {
+      background: var(--panel-bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 1rem 0;
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .diff-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+    }
+    
+    .diff-stats {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    .diff-stat {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 600;
+    }
+    
+    .additions {
+      color: #22c55e;
+    }
+    
+    .deletions {
+      color: #ef4444;
+    }
+    
+    .diff-toggle {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: background 0.2s ease;
+    }
+    
+    .diff-toggle:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .diff-content {
+      max-height: 400px;
+      overflow: auto;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.4;
+      direction: ltr;
+    }
+    
+    .diff-line {
+      display: flex;
+      min-height: 20px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      width: 100%;
+    }
+    
+    .line-number {
+      background: var(--panel-bg-color);
+      color: #666;
+      padding: 0.125rem 0.5rem;
+      min-width: 50px;
+      text-align: right;
+      border-right: 1px solid var(--border-color);
+      user-select: none;
+      flex-shrink: 0;
+      font-size: 12px;
+    }
+    
+    .line-content {
+      padding: 0.125rem 0.75rem;
+      flex: 1;
+      white-space: pre;
+      min-height: 20px;
+      overflow-x: auto;
+    }
+    
+    .diff-line.added {
+      background: rgba(34, 197, 94, 0.15);
+      border-left: 3px solid #22c55e;
+    }
+    
+    .diff-line.added .line-number {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+    
+    .diff-line.removed {
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 3px solid #ef4444;
+    }
+    
+    .diff-line.removed .line-number {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+    
+    .diff-line.context {
+      background: var(--bg-color);
+    }
+    
+    .diff-line.context .line-number {
+      color: #666;
+    }
+    
+    .diff-line-indicator {
+      width: 20px;
+      padding: 0.125rem 0;
+      text-align: center;
+      font-weight: bold;
+      flex-shrink: 0;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .diff-line.added .diff-line-indicator {
+      background: rgba(34, 197, 94, 0.3);
+      color: #22c55e;
+    }
+    
+    .diff-line.added .diff-line-indicator::before {
+      content: '+';
+      font-weight: bold;
+    }
+    
+    .diff-line.removed .diff-line-indicator {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+    
+    .diff-line.removed .diff-line-indicator::before {
+      content: '−';
+      font-weight: bold;
+    }
+    
+    .diff-line.context .diff-line-indicator {
+      background: var(--panel-bg-color);
+      color: #666;
+    }
+    
+    .diff-line.context .diff-line-indicator::before {
+      content: ' ';
+    }
+    
+    /* Responsive diff view */
+    @media (max-width: 768px) {
+      .diff-content {
+        font-size: 12px;
+      }
+      
+      .line-number {
+        min-width: 35px;
+        font-size: 10px;
+      }
+      
+      .diff-line-indicator {
+        width: 15px;
+        font-size: 10px;
+      }
+    }
+    
+    /* Horizontal scroll for long lines */
+    .diff-content::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    .diff-content::-webkit-scrollbar-track {
+      background: var(--panel-bg-color);
+    }
+    
+    .diff-content::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+    
+    .diff-content::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    
     /* General modern enhancements */
     html {
       scroll-behavior: smooth;
@@ -1460,13 +1660,23 @@
                 </svg>
                 <span>إخفاء الكود</span>
               </button>
-              <button class="code-action-btn" onclick="formatCodeDisplay(this)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="16 18 22 12 16 6"></polyline>
-                  <polyline points="8 6 2 12 8 18"></polyline>
-                </svg>
-                تنسيق الكود
-              </button>
+                             <button class="code-action-btn" onclick="formatCodeDisplay(this)">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <polyline points="16 18 22 12 16 6"></polyline>
+                   <polyline points="8 6 2 12 8 18"></polyline>
+                 </svg>
+                 تنسيق الكود
+               </button>
+               <button class="code-action-btn" onclick="showDiffForStep(this)" data-step="${stepNumber}">
+                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                   <polyline points="14 2 14 8 20 8"></polyline>
+                   <line x1="16" y1="13" x2="8" y2="13"></line>
+                   <line x1="16" y1="17" x2="8" y2="17"></line>
+                   <polyline points="10 9 9 9 8 9"></polyline>
+                 </svg>
+                 عرض التغييرات
+               </button>
             </div>
             
                          <div class="code-container">
@@ -1504,6 +1714,172 @@
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
+    }
+    
+    // دالة إنشاء عرض الاختلافات (Diff View)
+    function createDiffView(oldCode, newCode, stepNumber) {
+      const oldLines = oldCode.split('\n');
+      const newLines = newCode.split('\n');
+      
+      // حساب الاختلافات باستخدام خوارزمية بسيطة
+      const diff = calculateDiff(oldLines, newLines);
+      
+      let addedCount = 0;
+      let removedCount = 0;
+      
+      // حساب الإحصائيات
+      diff.forEach(line => {
+        if (line.type === 'added') addedCount++;
+        if (line.type === 'removed') removedCount++;
+      });
+      
+      const diffId = `diff-${stepNumber}-${Date.now()}`;
+      
+      return `
+        <div class="diff-container">
+          <div class="diff-header">
+            <div class="diff-stats">
+              <span>التغييرات في الخطوة ${stepNumber}</span>
+              <div class="diff-stat additions">+${addedCount}</div>
+              <div class="diff-stat deletions">-${removedCount}</div>
+            </div>
+            <button class="diff-toggle" onclick="toggleDiffView('${diffId}')">
+              إخفاء التفاصيل
+            </button>
+          </div>
+          <div class="diff-content" id="${diffId}">
+            ${diff.map((line, index) => createDiffLine(line, index)).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    // دالة حساب الاختلافات البسيطة
+    function calculateDiff(oldLines, newLines) {
+      const diff = [];
+      let oldIndex = 0;
+      let newIndex = 0;
+      
+      while (oldIndex < oldLines.length || newIndex < newLines.length) {
+        const oldLine = oldLines[oldIndex];
+        const newLine = newLines[newIndex];
+        
+        if (oldIndex >= oldLines.length) {
+          // أسطر جديدة متبقية
+          diff.push({
+            type: 'added',
+            content: newLine,
+            lineNumber: newIndex + 1,
+            indicator: '+'
+          });
+          newIndex++;
+        } else if (newIndex >= newLines.length) {
+          // أسطر محذوفة متبقية
+          diff.push({
+            type: 'removed',
+            content: oldLine,
+            lineNumber: oldIndex + 1,
+            indicator: '-'
+          });
+          oldIndex++;
+        } else if (oldLine === newLine) {
+          // أسطر متطابقة (سياق)
+          diff.push({
+            type: 'context',
+            content: oldLine,
+            lineNumber: newIndex + 1,
+            indicator: ' '
+          });
+          oldIndex++;
+          newIndex++;
+        } else {
+          // البحث عن تطابق في الأسطر القادمة
+          let foundMatch = false;
+          
+          // البحث في الأسطر الجديدة
+          for (let i = newIndex + 1; i < Math.min(newIndex + 5, newLines.length); i++) {
+            if (oldLine === newLines[i]) {
+              // وجدنا تطابق، الأسطر قبله جديدة
+              for (let j = newIndex; j < i; j++) {
+                diff.push({
+                  type: 'added',
+                  content: newLines[j],
+                  lineNumber: j + 1,
+                  indicator: '+'
+                });
+              }
+              newIndex = i;
+              foundMatch = true;
+              break;
+            }
+          }
+          
+          if (!foundMatch) {
+            // البحث في الأسطر القديمة
+            for (let i = oldIndex + 1; i < Math.min(oldIndex + 5, oldLines.length); i++) {
+              if (newLine === oldLines[i]) {
+                // وجدنا تطابق، الأسطر قبله محذوفة
+                for (let j = oldIndex; j < i; j++) {
+                  diff.push({
+                    type: 'removed',
+                    content: oldLines[j],
+                    lineNumber: j + 1,
+                    indicator: '-'
+                  });
+                }
+                oldIndex = i;
+                foundMatch = true;
+                break;
+              }
+            }
+          }
+          
+          if (!foundMatch) {
+            // لا يوجد تطابق، اعتبر السطر القديم محذوف والجديد مضاف
+            diff.push({
+              type: 'removed',
+              content: oldLine,
+              lineNumber: oldIndex + 1,
+              indicator: '-'
+            });
+            diff.push({
+              type: 'added',
+              content: newLine,
+              lineNumber: newIndex + 1,
+              indicator: '+'
+            });
+            oldIndex++;
+            newIndex++;
+          }
+        }
+      }
+      
+      return diff;
+    }
+    
+    // دالة إنشاء سطر في عرض الاختلافات
+    function createDiffLine(line, index) {
+      return `
+        <div class="diff-line ${line.type}">
+          <div class="diff-line-indicator"></div>
+          <div class="line-number">${line.lineNumber}</div>
+          <div class="line-content">${escapeHtml(line.content)}</div>
+        </div>
+      `;
+    }
+    
+    // دالة تبديل عرض التفاصيل
+    function toggleDiffView(diffId) {
+      const diffContent = document.getElementById(diffId);
+      const button = diffContent.previousElementSibling.querySelector('.diff-toggle');
+      
+      if (diffContent.style.display === 'none') {
+        diffContent.style.display = 'block';
+        button.textContent = 'إخفاء التفاصيل';
+      } else {
+        diffContent.style.display = 'none';
+        button.textContent = 'إظهار التفاصيل';
+      }
     }
     
     // دوال تفاعلية لأزرار الكود
@@ -1585,6 +1961,49 @@
             تنسيق الكود
           `;
         }, 2000);
+      }
+    }
+    
+    function showDiffForStep(button) {
+      const stepNumber = button.dataset.step;
+      const session = sessions[currentSessionId];
+      
+      if (!session || !session.codeHistory) return;
+      
+      // العثور على الكود قبل وبعد هذه الخطوة
+      const currentIndex = session.historyIndex;
+      if (currentIndex > 0) {
+        const oldCode = session.codeHistory[Math.max(0, currentIndex - parseInt(stepNumber))];
+        const newCode = session.codeHistory[currentIndex];
+        
+        // إنشاء نافذة منبثقة لعرض الاختلافات
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.style.zIndex = '2000';
+        modal.innerHTML = `
+          <div class="modal-content" style="max-width: 90%; max-height: 90%;">
+            <div class="modal-header" style="justify-content: space-between;">
+              <h3 style="margin: 0; color: var(--text-color);">مقارنة التغييرات - الخطوة ${stepNumber}</h3>
+              <button id="close-diff-modal" style="background: none; border: none; color: var(--text-color); font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="flex: 1; overflow: hidden;">
+              ${createDiffView(oldCode, newCode, stepNumber)}
+            </div>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // إغلاق النافذة
+        modal.querySelector('#close-diff-modal').onclick = () => {
+          document.body.removeChild(modal);
+        };
+        
+        modal.onclick = (e) => {
+          if (e.target === modal) {
+            document.body.removeChild(modal);
+          }
+        };
       }
     }
     
@@ -1798,6 +2217,7 @@
         for (let i = 0; i < tasks.length; i++) {
             const taskDesc = tasks[i];
             updateTaskStatus(i, 'in-progress');
+            const oldCode = currentCode; // حفظ الكود القديم قبل التعديل
             const numberedCode = currentCode.split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n');
             try {
                 const executionPrompt = `You are a surgical code editing AI. ${specialPrompt} Your task is to modify the provided code to accomplish a specific task.\nYou MUST respond with ONLY the JSON object for the modification, without any explanation, description, or extra text.\nThe format is: { \"start_line\": number, \"end_line\": number, \"new_code\": \"string_of_new_code\" }\n- \"start_line\" and \"end_line\" are 1-based indices corresponding to the line numbers in the input.\n- To insert code at a specific line, set \"end_line\" to \"start_line - 1\". The code will be inserted before \"start_line\". For example, to insert at the beginning of the file, use start_line: 1, end_line: 0.\n- To delete lines, set \"new_code\" to an empty string \"\".\n- \"new_code\" should be a single string, with newlines represented by '\\n'.\n\nConversation History (for context):\n---\n${formattedHistory}\n---\n\nUser's original high-level request: \"${originalPrompt}\"\n\nThe specific, single task to execute now is: \"${taskDesc}\"\n\nCurrent Code (with 1-based line numbers):\n---\n${numberedCode || "(empty)"}\n---\n\nNow, provide ONLY the JSON object for the modification.`;
@@ -1843,9 +2263,19 @@
                 // تحديث الكود في المحرر مباشرة بعد كل خطوة
                 updateCodeAndView(currentCode, lastModifiedLines);
                 addCodeToHistory(currentCode);
-                // عرض الكود الناتج بعد كل خطوة في رسالة AI
-                _createMessageElement(`الكود بعد تنفيذ الخطوة: \n${currentCode}`, 'ai');
-                addMessageToState(`الكود بعد تنفيذ الخطوة: \n${currentCode}`, 'ai');
+                
+                // إنشاء عرض الاختلافات وعرضه في رسالة AI
+                const stepNumber = i + 1;
+                const diffHtml = createDiffView(oldCode, currentCode, stepNumber);
+                
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('message', 'ai');
+                messageEl.innerHTML = diffHtml;
+                messagesContainer.appendChild(messageEl);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // حفظ رسالة مبسطة في الذاكرة
+                addMessageToState(`تم تنفيذ الخطوة ${stepNumber}: ${taskDesc}`, 'ai');
                 updateTaskStatus(i, 'completed');
                 completedTasks++;
                 taskCounter.textContent = `${completedTasks} / ${tasks.length}`;

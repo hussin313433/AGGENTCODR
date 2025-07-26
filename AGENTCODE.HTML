@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tomorrow-night-blue.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #1e1e1e;
+      --panel-bg-color: #252526;
+      --border-color: #333333;
+      --text-color: #d4d4d4;
+      --primary-color: #2E8B57;
+      --primary-hover-color: #287C4D;
+      --input-bg-color: #3c3c3c;
+      --header-bg-color: #333333;
+      --button-bg-color: #444444;
+      --button-hover-bg-color: #555555;
+      --user-message-bg: #1A531A;
+      --ai-message-bg: #3a3d41;
+      --task-bg-color: #313132;
+      --success-color: #34d399;
+      --error-color: #f87171;
+      --font-family: 'IBM Plex Sans Arabic', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      display: flex;
+    }
+
+    .app-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    .chat-panel, .editor-panel {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-panel {
+      width: 40%;
+      background-color: var(--panel-bg-color);
+      border-left: 1px solid var(--border-color);
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    .editor-panel {
+      width: 60%;
+    }
+    
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      gap: 0.5rem;
+    }
+    
+    .panel-header h1 {
+      font-size: 1.2rem;
+      font-weight: 500;
+      text-shadow: 0 0 8px rgba(0,0,0,0.5);
+      flex: 1;
+      text-align: center;
+      margin: 0;
+    }
+
+    .header-icon-btn {
+      background-color: var(--button-bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease;
+    }
+    .header-icon-btn:hover {
+       background-color: var(--button-hover-bg-color);
+    }
+    
+    .task-progress {
+        background-color: var(--task-bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        flex-shrink: 0;
+    }
+    .task-header {
+        padding: 0.75rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+    }
+    .task-header > div {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 500;
+    }
+    .task-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        color: #888;
+    }
+    .chevron-icon {
+        transition: transform 0.3s ease;
+    }
+    .task-progress.collapsed .chevron-icon {
+        transform: rotate(-90deg);
+    }
+    .task-list {
+        padding: 0 1rem 1rem 1rem;
+        max-height: 500px;
+        overflow: hidden;
+        transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+    .task-progress.collapsed .task-list {
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    .task-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.5rem;
+        color: #a0a0a0;
+    }
+    .task-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .task-icon .check-icon { color: var(--success-color); }
+    .task-icon .error-icon { color: var(--error-color); }
+    .task-icon .spinner {
+       width: 16px; height: 16px;
+       border: 2px solid rgba(255,255,255,0.3);
+       border-top-color: var(--primary-color);
+    }
+
+
+    .messages-container {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+    
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      max-width: 90%;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .message.user {
+      background-color: var(--user-message-bg);
+      align-self: flex-start;
+      margin-left: auto;
+    }
+
+    .message.ai {
+      background-color: var(--ai-message-bg);
+      align-self: flex-end;
+      margin-right: auto;
+    }
+    
+    .message.loading {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #chat-form {
+      display: flex;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--panel-bg-color);
+      padding-top: 1rem;
+      flex-shrink: 0;
+    }
+
+    #prompt-input {
+      flex-grow: 1;
+      background-color: var(--input-bg-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-family: inherit;
+      resize: none;
+      margin-left: 1rem;
+    }
+
+    #chat-form button {
+      background-color: var(--primary-color);
+      color: white; border: none;
+      padding: 0 1.5rem; border-radius: 6px;
+      cursor: pointer; font-family: inherit;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    #chat-form button:hover { background-color: var(--primary-hover-color); }
+    #chat-form button:disabled { background-color: var(--button-bg-color); cursor: not-allowed; }
+
+    .editor-header {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 0.75rem 1rem;
+      background-color: #1e1e1e; flex-shrink: 0;
+    }
+
+    .editor-header h2 { font-size: 1rem; font-weight: 500; }
+    .editor-toolbar { display: flex; gap: 0.5rem; align-items: center; }
+
+    .editor-toolbar button {
+      background-color: var(--button-bg-color);
+      border: 1px solid var(--border-color);
+      color: var(--text-color); padding: 0.5rem 1rem;
+      border-radius: 5px; cursor: pointer;
+      transition: background-color 0.2s ease;
+      font-family: inherit; display: flex;
+      align-items: center; gap: 0.5rem;
+    }
+
+    .editor-toolbar button:hover { background-color: var(--button-hover-bg-color); }
+    .editor-toolbar button:disabled { background-color: #333; color: #777; cursor: not-allowed; border-color: #444; }
+    .editor-toolbar button#apply-btn { background-color: var(--primary-color); color: white; }
+    .editor-toolbar button#apply-btn:hover { background-color: var(--primary-hover-color); }
+
+    .editor-content {
+      flex-grow: 1;
+      overflow: auto;
+      background-color: #1e1e1e;
+      display: flex;
+      direction: ltr;
+    }
+    
+    .line-numbers-gutter {
+        flex-shrink: 0;
+        padding: 1rem;
+        font-family: var(--font-mono);
+        font-size: 14px;
+        line-height: 1.5;
+        color: #888;
+        text-align: right;
+        user-select: none;
+        background-color: var(--panel-bg-color);
+        border-right: 1px solid var(--border-color);
+    }
+
+    #code-display {
+      padding: 1rem;
+      white-space: pre;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.5;
+      outline: none;
+      flex-grow: 1;
+    }
+    
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background-color: var(--bg-color);
+      width: 90%; height: 90%;
+      border-radius: 8px; display: flex; flex-direction: column;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      padding: 0.5rem 1rem; display: flex;
+      justify-content: flex-end; background-color: var(--header-bg-color);
+      border-bottom: 1px solid var(--border-color);
+      border-top-left-radius: 8px; border-top-right-radius: 8px;
+    }
+
+    #close-preview-btn {
+      background: none; border: none;
+      color: var(--text-color); font-size: 1.5rem; cursor: pointer;
+    }
+
+    #preview-frame {
+      width: 100%; height: 100%; border: none;
+      flex-grow: 1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;
+    }
+    
+    /* Custom Highlight.js theme overrides to match image */
+    #code-display.hljs {
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+    .hljs-comment {
+      color: #7f848e;
+    }
+    .hljs-selector-tag,
+    .hljs-selector-class,
+    .hljs-selector-id {
+      color: #98c379; /* Green for selectors */
+    }
+    .hljs-attribute {
+      color: #56c4d8; /* Cyan for properties */
+    }
+    .hljs-number,
+    .hljs-string,
+    .hljs-literal,
+    .hljs-attr { /* attr is for HTML attributes */
+      color: #e5c07b; /* Orange for values and attributes */
+    }
+    .hljs-built_in {
+      color: #56c4d8; /* Cyan for built-ins like var() */
+    }
+    .hljs-name, /* For HTML/XML tags */
+    .hljs-tag {
+      color: #e06c75; /* Soft red for tags */
+    }
+    .hljs-keyword {
+      color: #c678dd; /* Purple for keywords */
+    }
+    .highlight-modified {
+      background: rgba(52, 211, 153, 0.18); /* شفافة أخضر */
+      transition: background 0.5s;
+    }
+    .ai-step-code {
+      background: #222;
+      color: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      max-height: 220px;
+      overflow: auto;
+      margin-bottom: 0.5rem;
+      direction: ltr;
+      white-space: pre;
+    }
+    
+    /* General modern enhancements */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Custom Scrollbar Styles */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--panel-bg-color);
+      border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #555;
+      border-radius: 5px;
+      border: 2px solid var(--panel-bg-color);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #777;
+    }
+
+    /* Better focus outline for accessibility and aesthetics */
+    :focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+      border-radius: 3px; /* So it applies nicely to various shapes */
+    }
+
+    /* Selection highlight color */
+    ::selection {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    /* Enhance inputs and textareas */
+    #prompt-input,
+    #code-display[contenteditable="true"] {
+      border: 1px solid var(--border-color);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #prompt-input:focus,
+    #code-display[contenteditable="true"]:focus {
+      border-color: var(--primary-color);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--primary-color);
+    }
+
+    /* Enhance buttons */
+    button {
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    /* Panel and container styling for depth */
+    .chat-panel,
+    .task-progress,
+    .modal-content {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-content {
+      border: 1px solid var(--border-color);
+    }
+    .chat-list {
+      margin: 0.5rem 0 0.5rem 0;
+      background: var(--panel-bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding: 0.25rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .chat-list-item {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-color);
+      background: none;
+      border: none;
+      text-align: right;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chat-list-item.active {
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: bold;
+    }
+    .chat-list-item:hover:not(.active) {
+      background: #333;
+    }
+    .chat-list-item .chat-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--primary-color);
+      flex-shrink: 0;
+    }
+    .chat-list-overlay {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 2000;
+      display: none;
+    }
+    .chat-list-sidebar {
+      position: fixed;
+      top: 0; right: 0;
+      width: 340px;
+      max-width: 100vw;
+      height: 100vh;
+      background: var(--panel-bg-color);
+      border-left: 1px solid var(--border-color);
+      box-shadow: -2px 0 16px rgba(0,0,0,0.18);
+      z-index: 2100;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(.4,1.4,.6,1);
+    }
+    .chat-list-sidebar.open {
+      transform: translateX(0);
+    }
+    .chat-list-sidebar-header {
+      padding: 1rem 1.5rem 0.5rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--panel-bg-color);
+    }
+    .chat-list-sidebar-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--primary-color);
+    }
+    .chat-list-sidebar-close {
+      background: none;
+      border: none;
+      color: var(--text-color);
+      font-size: 1.7rem;
+      cursor: pointer;
+      padding: 0 0.5rem;
+    }
+    .chat-list-sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.5rem 1rem 1rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .chat-list-item {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-color);
+      background: none;
+      border: none;
+      text-align: right;
+      font-family: inherit;
+      font-size: 1rem;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chat-list-item.active {
+      background: var(--primary-color);
+      color: #fff;
+      font-weight: bold;
+    }
+    .chat-list-item:hover:not(.active) {
+      background: #333;
+    }
+    .chat-list-item .chat-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--primary-color);
+      flex-shrink: 0;
+    }
+    .chat-list-new-btn {
+      margin: 1rem 1rem 0.5rem 1rem;
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1.5rem;
+      font-size: 1rem;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .chat-list-new-btn:hover {
+      background: var(--primary-hover-color);
+    }
+    @media (max-width: 500px) {
+      .chat-list-sidebar { width: 100vw; }
+    }
+  </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="chat-panel">
+      <header class="panel-header">
+        <div style="flex:1;"></div>
+        <h1 style="text-align:center; margin:0;">مساعد الكود الذكي</h1>
+        <div style="flex:1; display:flex; justify-content:flex-end;">
+          <button id="chat-list-toggle-btn" class="header-icon-btn" title="عرض الدردشات">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          </button>
+        </div>
+
+      </header>
+      <div id="chat-list-overlay" class="chat-list-overlay"></div>
+      <aside id="chat-list-sidebar" class="chat-list-sidebar">
+        <div class="chat-list-sidebar-header">
+          <h2>الدردشات</h2>
+          <button id="chat-list-sidebar-close" class="chat-list-sidebar-close" title="إغلاق">&times;</button>
+        </div>
+
+        <button id="chat-list-new-btn" class="chat-list-new-btn" style="margin:1rem 1rem 0.5rem 1rem; background:var(--primary-color); color:#fff; border:none; border-radius:6px; padding:0.5rem 1.5rem; font-size:1rem; font-family:inherit; font-weight:500; cursor:pointer; transition:background 0.2s; display:flex; align-items:center; gap:0.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+          دردشة جديدة
+        </button>
+        <div id="chat-list-sidebar-list" class="chat-list-sidebar-list"></div>
+        <button id="delete-chats-btn" style="background:#f87171; color:#fff; border:none; border-radius:6px; padding:0.5rem 1.5rem; font-size:1rem; font-family:inherit; font-weight:500; cursor:pointer; margin:1rem;">حذف جميع الدردشات</button>
+      </aside>
+
+      <div class="task-progress" id="task-progress-container" style="display: none;">
+        <header class="task-header" id="task-header">
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span id="task-title">خطة العمل</span>
+            </div>
+            <div class="task-meta">
+                <span id="task-counter"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+        </header>
+        <div class="task-list" id="task-list"></div>
+      </div>
+
+      <div class="messages-container" id="messages-container"></div>
+      <form id="chat-form">
+<button type="submit" id="send-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+        <textarea id="prompt-input" placeholder="اكتب طلبك هنا..." rows="1"></textarea>
+      </form>
+    </div>
+
+    <div class="editor-panel">
+      <header class="editor-header">
+        <div class="editor-toolbar">
+           <button id="undo-btn" title="رجوع">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9H8a5 5 0 0 0-5 5v0a5 5 0 0 0 5 5h10"></path><polyline points="12 13 8 9 12 5"></polyline></svg>
+
+            </button>
+            <button id="redo-btn" title="تقدم">
+
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h13a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H5"></path><polyline points="12 5 16 9 12 13"></polyline></svg>
+            </button>
+             <div style="width:1px; height: 24px; background-color: var(--border-color); margin: 0 0.5rem;"></div>
+          <button id="preview-btn" title="معاينة">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+          <button id="improve-btn" title="تطوير">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2m6.364 1.636l-1.414 1.414M21 12h-2M17.364 17.364l-1.414-1.414M12 21v-2M6.636 17.364l1.414-1.414M3 12h2M6.636 6.636l1.414 1.414M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"></path></svg>
+          </button>
+          <button id="self-improve-btn" title="تطوير ذاتي">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          </button>
+          <button id="apply-btn" title="تطبيق وإعادة تحميل">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </button>
+        </div>
+        <h2>محرر الكود</h2>
+      </header>
+      <div class="editor-content">
+        <div id="line-numbers" class="line-numbers-gutter"></div>
+        <pre id="code-display" class="language-html" contenteditable="true" tabindex="0"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="preview-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button id="close-preview-btn">&times;</button>
+      </div>
+      <iframe id="preview-frame" title="Live Preview"></iframe>
+    </div>
+  </div>
+
+  <!-- Modal for AI Discussion -->
+  <div id="ai-discussion-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 800px; max-height: 90vh;">
+      <div class="modal-header">
+        <button id="close-discussion-btn">&times;</button>
+      </div>
+      <div id="ai-discussion-content" style="flex:1; overflow-y:auto; padding:1rem; direction:ltr; background:var(--bg-color); color:var(--text-color); font-family:var(--font-mono); font-size:15px; border-radius:8px; min-height:200px;"></div>
+      <div id="ai-discussion-actions" style="padding:1rem; text-align:left;">
+        <button id="stop-discussion-btn" style="background:var(--error-color); color:white; border:none; border-radius:6px; padding:0.5rem 1.5rem; font-size:1rem; cursor:pointer; margin-left:0.5rem;">إيقاف الجولات</button>
+        <button id="apply-improved-btn" style="display:none; background:var(--primary-color); color:white; border:none; border-radius:6px; padding:0.5rem 1.5rem; font-size:1rem; cursor:pointer;">اعتماد الكود المحسن</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^0.12.0"
+      }
+    }
+  </script>
+  <script type="module">
+    import { GoogleGenAI, Type } from "@google/genai";
+
+    // --- API KEYS ROTATION LOGIC ---
+    const API_KEYS = [
+      "AIzaSyBd6z7ru09s2hbI7c-9PrF34gjR9r4o5iE",
+      "AIzaSyCYlSM0arXvt1GMnsUMIPrTF4T3U-jsxKI",
+      "AIzaSyBA5fBhhxIRuJxG9kNPu1JQ8wLMce9p_bg",
+      "AIzaSyCJhj0oJaRQeKudyDyvtSf-fz-xbpL-Mm8",
+      "AIzaSyBQOFjawlE69tA4Nuuq_hpyX2KPMsXzXDw",
+      "AIzaSyBJvsgVcIoJHPkoO8Ru1-maazHlS_efXUI"
+    ];
+    let apiKeyIndex = 0;
+    function getNextApiKey() {
+      const key = API_KEYS[apiKeyIndex];
+      apiKeyIndex = (apiKeyIndex + 1) % API_KEYS.length;
+      return key;
+    }
+    // دالة تغلف استدعاء GoogleGenAI وتعيد المحاولة تلقائياً عند ظهور خطأ quota
+    async function callGenAI(fn) {
+      let lastError;
+      for (let i = 0; i < API_KEYS.length; i++) {
+        const ai = new GoogleGenAI({ apiKey: getNextApiKey() });
+        try {
+          return await fn(ai);
+        } catch (err) {
+          lastError = err;
+          if (err && err.message && /quota|exceeded|API key/i.test(err.message)) {
+            continue; // جرب المفتاح التالي
+          } else {
+            throw err;
+          }
+        }
+      }
+      throw lastError || new Error("All API keys quota exceeded or failed.");
+    }
+
+    const API_KEY = "AIzaSyCYlSM0arXvt1GMnsUMIPrTF4T3U-jsxKI";
+    if (!API_KEY) {
+        document.body.innerHTML = `<div style="color:red; padding: 2rem; text-align: right; font-size: 1.2rem;">خطأ: متغير البيئة API_KEY غير معين. لا يمكن بدء تشغيل التطبيق.</div>`;
+        throw new Error("API key not found");
+    }
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+    // DOM Elements
+    const codeDisplay = document.getElementById('code-display');
+    const lineNumbersGutter = document.getElementById('line-numbers');
+    const messagesContainer = document.getElementById('messages-container');
+    const chatForm = document.getElementById('chat-form');
+    const promptInput = document.getElementById('prompt-input');
+    const sendButton = document.getElementById('send-button');
+    const previewBtn = document.getElementById('preview-btn');
+    const improveBtn = document.getElementById('improve-btn');
+    const selfImproveBtn = document.getElementById('self-improve-btn');
+    const applyBtn = document.getElementById('apply-btn');
+    const previewModal = document.getElementById('preview-modal');
+    const closePreviewBtn = document.getElementById('close-preview-btn');
+    const previewFrame = document.getElementById('preview-frame');
+
+    const taskProgressContainer = document.getElementById('task-progress-container');
+    const taskHeader = document.getElementById('task-header');
+    const taskList = document.getElementById('task-list');
+    const taskCounter = document.getElementById('task-counter');
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    // AI Discussion Modal Elements
+    const aiDiscussionModal = document.getElementById('ai-discussion-modal');
+    const closeDiscussionBtn = document.getElementById('close-discussion-btn');
+    const aiDiscussionContent = document.getElementById('ai-discussion-content');
+    const applyImprovedBtn = document.getElementById('apply-improved-btn');
+    const stopDiscussionBtn = document.getElementById('stop-discussion-btn');
+    const chatListSidebar = document.getElementById('chat-list-sidebar');
+    const chatListSidebarList = document.getElementById('chat-list-sidebar-list');
+    const chatListSidebarClose = document.getElementById('chat-list-sidebar-close');
+
+    const chatListToggleBtn = document.getElementById('chat-list-toggle-btn');
+    const chatListOverlay = document.getElementById('chat-list-overlay'); // تم إضافة هذا السطر
+    const chatListNewBtn = document.getElementById('chat-list-new-btn');
+    const deleteChatsBtn = document.getElementById('delete-chats-btn');
+
+    // App State
+    let sessions = {};
+    let currentSessionId = null;
+    const initialCode = ''; // Start with a blank slate
+
+    function saveState() {
+        localStorage.setItem('ai-code-editor-sessions', JSON.stringify(sessions));
+        localStorage.setItem('ai-code-editor-last-session', currentSessionId);
+    }
+
+    function loadState() {
+        const savedSessions = localStorage.getItem('ai-code-editor-sessions');
+        const lastSessionId = localStorage.getItem('ai-code-editor-last-session');
+        
+        if (savedSessions) {
+            sessions = JSON.parse(savedSessions);
+            if (lastSessionId && sessions[lastSessionId]) {
+                currentSessionId = lastSessionId;
+            } else {
+                const sessionIds = Object.keys(sessions);
+                currentSessionId = sessionIds.length > 0 ? sessionIds[sessionIds.length - 1] : null;
+            }
+        }
+
+        if (!currentSessionId) {
+            startNewChat();
+        } else {
+            renderCurrentSession();
+            renderChatList();
+        }
+    }
+    
+    function startNewChat() {
+        console.log('إنشاء دردشة جديدة...');
+        const newId = Date.now().toString();
+        sessions[newId] = {
+            id: newId,
+            messages: [{
+                sender: 'ai',
+                text: 'أهلاً بك! أنا مساعدك البرمجي. صف لي الكود الذي تريد كتابته، وسأبدأ فوراً.'
+            }],
+            codeHistory: [initialCode],
+            historyIndex: 0
+        };
+        currentSessionId = newId;
+        renderCurrentSession();
+        renderChatList();
+        saveState();
+        console.log('تم إنشاء دردشة جديدة بنجاح');
+    }
+    
+    function updateCodeAndView(code, highlightLines = []) {
+        codeDisplay.textContent = code;
+        hljs.highlightElement(codeDisplay);
+        
+        const lineCount = code.split('\n').length;
+        lineNumbersGutter.innerHTML = Array.from({length: lineCount}, (_, i) => i + 1).join('<br>');
+
+        // Highlight modified lines
+        if (highlightLines.length > 0) {
+          // Wait for DOM update
+          setTimeout(() => {
+            const codeHtml = codeDisplay.innerHTML.split('\n');
+            for (const lineNum of highlightLines) {
+              if (codeHtml[lineNum - 1] !== undefined) {
+                codeHtml[lineNum - 1] = `<span class="highlight-modified">${codeHtml[lineNum - 1]}</span>`;
+              }
+            }
+            codeDisplay.innerHTML = codeHtml.join('\n');
+            // Remove highlight after 1.5s
+            setTimeout(() => {
+              codeDisplay.innerHTML = codeDisplay.innerHTML.replace(/<span class="highlight-modified">(.*?)<\/span>/g, '$1');
+            }, 1500);
+          }, 0);
+        }
+    }
+
+    function renderCurrentSession() {
+        if (!currentSessionId || !sessions[currentSessionId]) return;
+        const session = sessions[currentSessionId];
+
+        messagesContainer.innerHTML = '';
+        session.messages.forEach(message => {
+            _createMessageElement(message.text, message.sender);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        const currentCode = session.codeHistory[session.historyIndex];
+        updateCodeAndView(currentCode);
+        updateUndoRedoButtons();
+        
+        taskProgressContainer.style.display = 'none';
+        renderChatList();
+    }
+
+    function _createMessageElement(text, sender, isLoading = false) {
+      const messageEl = document.createElement('div');
+      messageEl.classList.add('message', sender);
+      
+      if (isLoading) {
+        messageEl.classList.add('loading');
+        messageEl.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
+      } else if (sender === 'ai' && text.startsWith('الكود بعد تنفيذ الخطوة:')) {
+        // عرض الكود في مربع متقلص وجميل
+        const code = text.replace(/^الكود بعد تنفيذ الخطوة:\s*/,'');
+        messageEl.innerHTML = `<div style="margin-bottom:0.5rem; color:#aaa; font-size:13px;">الكود بعد تنفيذ الخطوة:</div><pre class="ai-step-code"><code>${code.replace(/[&<>]/g, function(tag) {
+          const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+          return charsToReplace[tag] || tag;
+        })}</code></pre>`;
+      } else if (sender === 'ai' && sessions[currentSessionId] && sessions[currentSessionId].messages[sessions[currentSessionId].messages.length-1]?.text === text) {
+        // Typewriter effect ONLY for the latest AI message
+        let i = 0;
+        messageEl.textContent = '';
+        function typeWriter() {
+          if (i < text.length) {
+            messageEl.textContent += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 12 + Math.random() * 30);
+          }
+        }
+        typeWriter();
+      } else {
+        messageEl.textContent = text;
+      }
+      
+      messagesContainer.appendChild(messageEl);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return messageEl;
+    }
+    
+    function addMessageToState(text, sender) {
+        sessions[currentSessionId].messages.push({ text, sender });
+        saveState();
+    }
+    
+    function addCodeToHistory(newCode) {
+        const session = sessions[currentSessionId];
+        if (session.historyIndex < session.codeHistory.length - 1) {
+            session.codeHistory = session.codeHistory.slice(0, session.historyIndex + 1);
+        }
+        session.codeHistory.push(newCode);
+        session.historyIndex = session.codeHistory.length - 1;
+        updateUndoRedoButtons();
+        saveState();
+    }
+
+    function updateUndoRedoButtons() {
+        const session = sessions[currentSessionId];
+        undoBtn.disabled = session.historyIndex <= 0;
+        redoBtn.disabled = session.historyIndex >= session.codeHistory.length - 1;
+    }
+
+    function undo() {
+        const session = sessions[currentSessionId];
+        if (session.historyIndex > 0) {
+            session.historyIndex--;
+            const code = session.codeHistory[session.historyIndex];
+            updateCodeAndView(code);
+            updateUndoRedoButtons();
+            saveState();
+        }
+    }
+
+    function redo() {
+        const session = sessions[currentSessionId];
+        if (session.historyIndex < session.codeHistory.length - 1) {
+            session.historyIndex++;
+            const code = session.codeHistory[session.historyIndex];
+            updateCodeAndView(code);
+            updateUndoRedoButtons();
+            saveState();
+        }
+    }
+
+
+    async function handleSendMessage(e) {
+      e.preventDefault();
+      // تحديث الكود الحالي من المحرر قبل أي معالجة
+      const session = sessions[currentSessionId];
+      if (session) {
+        session.codeHistory[session.historyIndex] = codeDisplay.textContent;
+        saveState();
+      }
+      // طباعة الكود الحالي في الكونسول للتشخيص
+      console.log('الكود الحالي:', codeDisplay.textContent);
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      const currentCode = codeDisplay.textContent;
+
+      _createMessageElement(prompt, 'user');
+      addMessageToState(prompt, 'user');
+      
+      // توليد عنوان للدردشة بعد أول رسالة من المستخدم
+      if (session.messages.length === 2) { // أول رسالة من المستخدم
+        try {
+          const titlePrompt = `اقترح عنوانًا مختصرًا (3-6 كلمات) يصف طلب المستخدم التالي بشكل واضح، بدون علامات ترقيم إضافية أو رموز، فقط نص واضح:
+\n\n${prompt}`;
+          callGenAI(ai => ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: titlePrompt
+          })).then(titleRes => {
+            let title = titleRes.text.trim().replace(/[\n\r]+/g, ' ');
+            if (title.length > 32) title = title.slice(0, 32) + '…';
+            session.title = title;
+            saveState();
+            renderChatList();
+          }).catch(e => { 
+            console.log('فشل في توليد العنوان:', e);
+          });
+        } catch (e) { 
+          console.log('فشل في توليد العنوان:', e);
+        }
+      }
+      
+      promptInput.value = '';
+      promptInput.disabled = true;
+      sendButton.disabled = true;
+      const loadingMessage = _createMessageElement('أحلل طلبك...', 'ai', true);
+
+      try {
+        const session = sessions[currentSessionId];
+        const formattedHistory = session.messages.map(m => `${m.sender === 'user' ? 'مستخدم' : 'مساعد'}: ${m.text}`).join('\n\n');
+
+        const planningPrompt = `You are an intelligent AI assistant. Your responses must be in Arabic.\nBased on the full conversation history provided below, analyze ONLY the latest user request.\n\nConversation History:\n---\n${formattedHistory}\n---\n\nCurrent Code:\n---\n${currentCode || '(empty)'}\n---\n\nBased on this latest request, decide if it is a 'code_modification' or a 'general_question'.\n- If it's a 'code_modification', create a step-by-step plan. The tasks in the plan MUST be in Arabic.\n- If it's a 'general_question', provide a direct, helpful answer in Arabic, taking the full conversation history into account for context.\n\nملاحظة هامة: يجب أن يكون الكود الناتج عبارة عن ملف HTML واحد فقط، ويحتوي بداخله على جميع أكواد CSS وJavaScript اللازمة داخل وسوم <style> و<script>.`;
+
+        const planningResponse = await callGenAI(ai => ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: planningPrompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        request_type: { type: Type.STRING, enum: ["code_modification", "general_question"] },
+                        tasks: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "قائمة مهام تعديل الكود باللغة العربية."
+                        },
+                        answer: { type: Type.STRING, description: "إجابة للسؤال العام باللغة العربية." }
+                    }
+                }
+            }
+        }));
+        
+        loadingMessage.remove();
+        const plan = JSON.parse(planningResponse.text);
+
+        if (plan.request_type === 'general_question') {
+            _createMessageElement(plan.answer, 'ai');
+            addMessageToState(plan.answer, 'ai');
+        } else if (plan.request_type === 'code_modification' && plan.tasks && plan.tasks.length > 0) {
+            await executeTaskPlan(plan.tasks, formattedHistory, prompt);
+        } else {
+            const fallbackMsg = "لم أتمكن من تحديد الإجراء المطلوب. هل يمكنك إعادة صياغة طلبك؟";
+             _createMessageElement(fallbackMsg, 'ai');
+             addMessageToState(fallbackMsg, 'ai');
+        }
+
+      } catch (error) {
+        console.error(error);
+        loadingMessage.remove();
+        const errorMsg = `حدث خطأ: ${error.message}`;
+        _createMessageElement(errorMsg, 'ai');
+        addMessageToState(errorMsg, 'ai');
+      } finally {
+        promptInput.disabled = false;
+        sendButton.disabled = false;
+        promptInput.focus();
+      }
+    }
+    
+    async function executeTaskPlan(tasks, formattedHistory, originalPrompt) {
+        // إضافة خطوة CSS تلقائية إذا لم توجد خطوة تصميم أو CSS
+        const hasCssStep = tasks.some(task => /css|تصميم|تنسيق|style|ستايل/i.test(task));
+        if (!hasCssStep) {
+            tasks.unshift('أضف تنسيقات CSS حديثة وجميلة للموقع.');
+        }
+        renderTaskList(tasks);
+        let currentCode = sessions[currentSessionId].codeHistory[sessions[currentSessionId].historyIndex];
+        let completedTasks = 0;
+        let lastModifiedLines = [];
+        
+        for (let i = 0; i < tasks.length; i++) {
+            const taskDesc = tasks[i];
+            updateTaskStatus(i, 'in-progress');
+            const numberedCode = currentCode.split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n');
+            try {
+                const executionPrompt = `You are a surgical code editing AI. Your task is to modify the provided code to accomplish a specific task.\nYou MUST respond with ONLY the JSON object for the modification, without any explanation, description, or extra text.\nThe format is: { \"start_line\": number, \"end_line\": number, \"new_code\": \"string_of_new_code\" }\n- \"start_line\" and \"end_line\" are 1-based indices corresponding to the line numbers in the input.\n- To insert code at a specific line, set \"end_line\" to \"start_line - 1\". The code will be inserted before \"start_line\". For example, to insert at the beginning of the file, use start_line: 1, end_line: 0.\n- To delete lines, set \"new_code\" to an empty string \"\".\n- \"new_code\" should be a single string, with newlines represented by '\\n'.\n\nConversation History (for context):\n---\n${formattedHistory}\n---\n\nUser's original high-level request: \"${originalPrompt}\"\n\nThe specific, single task to execute now is: \"${taskDesc}\"\n\nCurrent Code (with 1-based line numbers):\n---\n${numberedCode || "(empty)"}\n---\n\nNow, provide ONLY the JSON object for the modification.`;
+
+                const response = await callGenAI(ai => ai.models.generateContent({
+                    model: "gemini-2.5-flash",
+                    contents: executionPrompt,
+                    config: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.OBJECT,
+                            properties: {
+                                start_line: { type: Type.NUMBER, description: "The 1-based starting line number for the code modification." },
+                                end_line: { type: Type.NUMBER, description: "The 1-based ending line number for the code modification." },
+                                new_code: { type: Type.STRING, description: "The new code to insert/replace, with newlines as \\n." }
+                            },
+                            required: ["start_line", "end_line", "new_code"]
+                        }
+                    }
+                }));
+                const modification = JSON.parse(response.text);
+                const { start_line, end_line, new_code } = modification;
+                let codeLines = currentCode.split('\n');
+                if (codeLines.length === 1 && codeLines[0] === '') {
+                    codeLines = [];
+                }
+                const startIdx = start_line - 1;
+                const endIdx = end_line - 1;
+                const deleteCount = Math.max(0, endIdx - startIdx + 1);
+                if (startIdx < -1 || startIdx > codeLines.length) {
+                   throw new Error(`AI provided an invalid start line: ${start_line}. File has ${codeLines.length} lines.`);
+                }
+                const newCodeLines = (new_code === null || new_code === undefined) ? [] : new_code.split('\n');
+                // Highlight the lines that will be modified (after the change)
+                lastModifiedLines = [];
+                if (newCodeLines.length > 0) {
+                  for (let l = 0; l < newCodeLines.length; l++) {
+                    lastModifiedLines.push(startIdx + 1 + l);
+                  }
+                }
+                codeLines.splice(startIdx, deleteCount, ...newCodeLines);
+                currentCode = codeLines.join('\n');
+                // تحديث الكود في المحرر مباشرة بعد كل خطوة
+                updateCodeAndView(currentCode, lastModifiedLines);
+                addCodeToHistory(currentCode);
+                // عرض الكود الناتج بعد كل خطوة في رسالة AI
+                _createMessageElement(`الكود بعد تنفيذ الخطوة: \n${currentCode}`, 'ai');
+                addMessageToState(`الكود بعد تنفيذ الخطوة: \n${currentCode}`, 'ai');
+                updateTaskStatus(i, 'completed');
+                completedTasks++;
+                taskCounter.textContent = `${completedTasks} / ${tasks.length}`;
+            } catch(err) {
+                console.error(`Error on task ${i}:`, err);
+                const errorDetails = err.message || JSON.stringify(err);
+                updateTaskStatus(i, 'failed', errorDetails);
+                const failMsg = `فشلت في إكمال المهمة: "${taskDesc}"\nالسبب: ${errorDetails}`;
+                _createMessageElement(failMsg, 'ai');
+                addMessageToState(failMsg, 'ai');
+                return; 
+            }
+        }
+        // إزالة التحديث النهائي في نهاية الدالة
+        const successMsg = 'لقد أكملت جميع المهام بنجاح.';
+        _createMessageElement(successMsg, 'ai');
+        addMessageToState(successMsg, 'ai');
+    }
+
+    function renderTaskList(tasks) {
+        taskList.innerHTML = '';
+        tasks.forEach((taskDesc, index) => {
+            const taskItem = document.createElement('div');
+            taskItem.className = 'task-item';
+            taskItem.dataset.index = index;
+            taskItem.innerHTML = `
+                <div class="task-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pending-icon"><circle cx="12" cy="12" r="10"></circle></svg>
+                </div>
+                <span>${taskDesc}</span>`;
+            taskList.appendChild(taskItem);
+        });
+        taskCounter.textContent = `0 / ${tasks.length}`;
+        taskProgressContainer.classList.remove('collapsed');
+        taskProgressContainer.style.display = 'block';
+    }
+
+    function updateTaskStatus(index, status, errorMsg = '') {
+        const taskItem = taskList.querySelector(`.task-item[data-index='${index}']`);
+        if (!taskItem) return;
+        const iconContainer = taskItem.querySelector('.task-icon');
+        
+        let iconHtml = '';
+        switch (status) {
+            case 'in-progress':
+                iconHtml = `<div class="spinner"></div>`; break;
+            case 'completed':
+                iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="check-icon"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                taskItem.style.color = 'var(--success-color)'; break;
+            case 'failed':
+                iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="error-icon"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+                taskItem.style.color = 'var(--error-color)';
+                taskItem.title = errorMsg; break;
+        }
+        iconContainer.innerHTML = iconHtml;
+    }
+
+
+    function showPreview() {
+      const currentCode = sessions[currentSessionId].codeHistory[sessions[currentSessionId].historyIndex];
+      previewFrame.srcdoc = currentCode;
+      previewModal.style.display = 'flex';
+    }
+
+    function hidePreview() {
+      previewModal.style.display = 'none';
+      previewFrame.srcdoc = ''; 
+    }
+
+    function applyChanges() {
+      if (confirm("هل أنت متأكد؟ سيؤدي هذا إلى إعادة تحميل الصفحة بالكود الجديد.")) {
+        const newCode = sessions[currentSessionId].codeHistory[sessions[currentSessionId].historyIndex];
+        const blob = new Blob([newCode], {type: 'text/html'});
+        const url = URL.createObjectURL(blob);
+        window.location.href = url;
+      }
+    }
+
+    // ========== AI Discussion Logic ==========
+    let stopAIDiscussion = false;
+    async function startAIDiscussionLoop() {
+      stopAIDiscussion = false;
+      aiDiscussionContent.innerHTML = '';
+      let ai1Memory = [];
+      let ai2Memory = [];
+      let currentCode = sessions[currentSessionId].codeHistory[sessions[currentSessionId].historyIndex];
+      let improvedCode = currentCode;
+      let round = 1;
+
+      // إعداد نماذج الذكاء الاصطناعي
+      const ai1 = new GoogleGenAI({ apiKey: "AIzaSyCYlSM0arXvt1GMnsUMIPrTF4T3U-jsxKI" });
+      const ai2 = new GoogleGenAI({ apiKey: "AIzaSyCJhj0oJaRQeKudyDyvtSf-fz-xbpL-Mm8" });
+
+      while (!stopAIDiscussion) {
+        // AI1: تحليل السلبيات
+        const ai1Prompt = `أنت خبير تجربة مستخدم (UX) ومهمتك تحليل كود HTML التالي فقط من ناحية تجربة المستخدم، وذكر جميع السلبيات والمشاكل التي قد تؤثر على المستخدم بشكل منطقي ومنهجي، مع اقتراح خطوات عمل واضحة للتحسين. لا تكتب أي كود، فقط التحليل والخطوات.\n\n${ai1Memory.length > 0 ? 'سياق سابق:\n' + ai1Memory.join('\n---\n') + '\n' : ''}الكود الحالي:\n---\n${improvedCode}\n---`;
+        aiDiscussionContent.innerHTML += `<div style="margin-bottom:1rem;"><b>AI1 (تحليل السلبيات):</b><br><span style="color:#e06c75;">جاري التحليل...</span></div>`;
+        aiDiscussionContent.scrollTop = aiDiscussionContent.scrollHeight;
+        let ai1Analysis = '';
+        try {
+          const ai1Res = await callGenAI(ai => ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: ai1Prompt
+          }));
+          ai1Analysis = ai1Res.text.trim();
+        } catch (err) {
+          ai1Analysis = 'حدث خطأ في تحليل AI1: ' + err.message;
+          stopAIDiscussion = true;
+        }
+        ai1Memory.push(ai1Analysis);
+        aiDiscussionContent.innerHTML = aiDiscussionContent.innerHTML.replace('جاري التحليل...', ai1Analysis.replace(/\n/g, '<br>'));
+        aiDiscussionContent.scrollTop = aiDiscussionContent.scrollHeight;
+        if (stopAIDiscussion) break;
+
+        // AI2: تنفيذ التحسينات
+        // استخراج الخطوات من تحليل AI1
+        let steps = [];
+        const stepRegex = /(?:^|\n)\s*(?:\d+\.|-)[ \t]*(.+?)(?=\n|$)/g;
+        let match;
+        while ((match = stepRegex.exec(ai1Analysis)) !== null) {
+          steps.push(match[1].trim());
+        }
+        if (steps.length === 0) {
+          // إذا لم يتمكن من استخراج خطوات، نفذ التحليل كله دفعة واحدة
+            steps = [ai1Analysis];
+        }
+        for (let i = 0; i < steps.length; i++) {
+          if (stopAIDiscussion) break;
+          const step = steps[i];
+          const ai2StepPrompt = `أنت خبير تطوير واجهات ويب. لديك كود HTML فقط (بدون CSS أو JS خارجي). مهمتك تنفيذ الخطوة التالية فقط على الكود الحالي، ثم تعيد الكود الجديد فقط (بدون شرح أو تعليق أو أي نص آخر).\n\nالخطوة المطلوب تنفيذها:\n${step}\n\nالكود الحالي:\n---\n${improvedCode}\n---`;
+          aiDiscussionContent.innerHTML += `<div style=\"margin-bottom:1rem;\"><b>AI2 (تنفيذ خطوة: ${step.replace(/[&<>]/g, function(tag) {
+            const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+            return charsToReplace[tag] || tag;
+          })}):</b><br><span style=\"color:#56c4d8;\">جاري التنفيذ...</span></div>`;
+          aiDiscussionContent.scrollTop = aiDiscussionContent.scrollHeight;
+          let ai2StepCode = '';
+          try {
+            const ai2StepRes = await callGenAI(ai => ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: ai2StepPrompt
+            }));
+            ai2StepCode = ai2StepRes.text.trim();
+          } catch (err) {
+            ai2StepCode = 'حدث خطأ في تنفيذ AI2: ' + err.message;
+            stopAIDiscussion = true;
+          }
+          ai2Memory.push(ai2StepCode);
+          aiDiscussionContent.innerHTML = aiDiscussionContent.innerHTML.replace(
+            'جاري التنفيذ...',
+            `<div style=\"margin-bottom:0.5rem; color:#aaa; font-size:13px;\">(تم تنفيذ الخطوة: ${step.replace(/[&<>]/g, function(tag) {
+              const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+              return charsToReplace[tag] || tag;
+            })}. الكود الكامل تم تحديثه في المحرر الرئيسي ويمكنك تعديله أو معاينته مباشرة)</div><pre style=\"background:#222; color:#fff; padding:0.5rem; border-radius:6px; overflow:auto; max-height:200px;\">${ai2StepCode.replace(/[&<>]/g, function(tag) {
+              const charsToReplace = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+              return charsToReplace[tag] || tag;
+            })}</pre>`
+          );
+          aiDiscussionContent.scrollTop = aiDiscussionContent.scrollHeight;
+          if (stopAIDiscussion) break;
+          // تحديث الكود في المحرر بعد كل خطوة
+          improvedCode = ai2StepCode;
+          updateCodeAndView(improvedCode);
+          applyImprovedBtn.style.display = 'inline-block';
+          // انتظار قصير لإتاحة الإيقاف
+          await new Promise(res => setTimeout(res, 400));
+        }
+
+        // عند الضغط على "اعتماد الكود المحسن"
+        applyImprovedBtn.onclick = () => {
+          addCodeToHistory(improvedCode);
+          updateCodeAndView(improvedCode);
+          aiDiscussionModal.style.display = 'none';
+        };
+
+        // انتظار قصير بين الجولات (لإتاحة الإيقاف)
+        await new Promise(res => setTimeout(res, 500));
+      }
+    }
+
+    // ========== Self-Improvement Logic ==========
+    let stopSelfImprove = false;
+    selfImproveBtn.addEventListener('click', async () => {
+      stopSelfImprove = false;
+      selfImproveBtn.disabled = true;
+      selfImproveBtn.textContent = 'جاري التطوير الذاتي...';
+      let currentCode = sessions[currentSessionId].codeHistory[sessions[currentSessionId].historyIndex];
+      let round = 1;
+      while (!stopSelfImprove) {
+        // احذف رسائل التطوير الذاتي السابقة قبل كل جولة جديدة
+        clearSelfImproveMessages();
+        // 1. اطلب من الذكاء الاصطناعي توليد خطة تطوير جديدة بناءً على الكود الحالي
+        const planningPrompt = `أنت مساعد برمجي ذاتي التطوير. مهمتك الوحيدة تحسين الجماليات والتنسيق والشكل وتجربة المستخدم (UI/UX) للكود الحالي فقط، مثل الألوان، الخطوط، التباعد، الرسوميات، التفاعل البصري، وتحسين العرض على جميع الأجهزة. لا تقترح أو تنفذ أي تغييرات على الوظائف أو المنطق أو تضيف ميزات جديدة. ركز فقط على تحسين CSS وHTML presentation. في كل جولة، حلل الكود الحالي واقترح خطة تطوير جديدة لتحسين الشكل والتجربة البصرية فقط. إذا لم يعد هناك ما يمكن تحسينه في الجماليات، أجب فقط: 'انتهى التطوير الذاتي.'\n\nالكود الحالي:\n---\n${currentCode}\n---`;
+        let plan;
+        try {
+          const planningResponse = await callGenAI(ai => ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: planningPrompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  tasks: { type: Type.ARRAY, items: { type: Type.STRING }, description: "خطوات تطوير ذاتي جديدة (تحسينات جمالية فقط)." },
+                  finished: { type: Type.BOOLEAN, description: "هل انتهى التطوير الذاتي؟" }
+                },
+                required: ["tasks", "finished"]
+              }
+            }
+          }));
+          plan = JSON.parse(planningResponse.text);
+        } catch (err) {
+          _createMessageElement('فشل في توليد خطة تطوير ذاتي: ' + err.message, 'ai');
+          break;
+        }
+        if (plan.finished || !plan.tasks || plan.tasks.length === 0) {
+          _createMessageElement('انتهى التطوير الذاتي.', 'ai');
+          taskProgressContainer.style.display = 'none';
+          break;
+        }
+        // عرض خطوات الجولة الحالية في قائمة المهام
+        renderTaskList(plan.tasks);
+        let completedTasks = 0;
+        for (let i = 0; i < plan.tasks.length; i++) {
+          if (stopSelfImprove) break;
+          const taskDesc = plan.tasks[i];
+          updateTaskStatus(i, 'in-progress');
+          const numberedCode = currentCode.split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n');
+          try {
+            const executionPrompt = `أنت مساعد برمجي متخصص في تحسين الجماليات والتنسيق والشكل (UI/UX, CSS, presentation) فقط. مهمتك تعديل الكود الحالي لتحقيق الخطوة التالية فقط، دون أي تغيير في الوظائف أو المنطق أو إضافة ميزات جديدة.\n\nيجب أن يكون ردك كائن JSON فقط بهذا الشكل: { \"start_line\": رقم, \"end_line\": رقم, \"new_code\": \"الكود الجديد\" }\n- \"start_line\" و\"end_line\" أرقام الأسطر (1-based) المطلوب تعديلها أو استبدالها.\n- إذا أردت إدراج كود، اجعل end_line = start_line - 1.\n- إذا أردت حذف أسطر، اجعل new_code فارغاً.\n- new_code يجب أن يكون نصاً واحداً مع \n للفواصل.\n\nالخطوة: ${taskDesc}\n\nالكود الحالي (مع أرقام الأسطر):\n---\n${numberedCode}\n---\n\nأعد فقط كائن JSON المطلوب بدون أي شرح أو نص إضافي.`;
+            const response = await callGenAI(ai => ai.models.generateContent({
+              model: 'gemini-2.5-flash',
+              contents: executionPrompt,
+              config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                  type: Type.OBJECT,
+                  properties: {
+                    start_line: { type: Type.NUMBER, description: "رقم السطر الأول (1-based) للتعديل." },
+                    end_line: { type: Type.NUMBER, description: "رقم السطر الأخير (1-based) للتعديل." },
+                    new_code: { type: Type.STRING, description: "الكود الجديد المطلوب إدراجه أو استبداله، مع \n للفواصل." }
+                  },
+                  required: ["start_line", "end_line", "new_code"]
+                }
+              }
+            }));
+            const modification = JSON.parse(response.text);
+            const { start_line, end_line, new_code } = modification;
+            let codeLines = currentCode.split('\n');
+            if (codeLines.length === 1 && codeLines[0] === '') {
+                codeLines = [];
+            }
+            const startIdx = start_line - 1;
+            const endIdx = end_line - 1;
+            const deleteCount = Math.max(0, endIdx - startIdx + 1);
+            if (startIdx < -1 || startIdx > codeLines.length) {
+               throw new Error(`AI provided an invalid start line: ${start_line}. File has ${codeLines.length} lines.`);
+            }
+            const newCodeLines = (new_code === null || new_code === undefined) ? [] : new_code.split('\n');
+            // Highlight the lines that will be modified (after the change)
+            let lastModifiedLines = [];
+            if (newCodeLines.length > 0) {
+              for (let l = 0; l < newCodeLines.length; l++) {
+                lastModifiedLines.push(startIdx + 1 + l);
+              }
+            }
+            codeLines.splice(startIdx, deleteCount, ...newCodeLines);
+            currentCode = codeLines.join('\n');
+            updateCodeAndView(currentCode, lastModifiedLines);
+            addCodeToHistory(currentCode);
+            updateTaskStatus(i, 'completed');
+            completedTasks++;
+            taskCounter.textContent = `${completedTasks} / ${plan.tasks.length}`;
+          } catch (err) {
+            updateTaskStatus(i, 'failed', err.message);
+            _createMessageElement('فشل تنفيذ خطوة تطوير ذاتي: ' + err.message, 'ai');
+            stopSelfImprove = true;
+            break;
+          }
+        }
+        round++;
+        await new Promise(res => setTimeout(res, 500));
+      }
+      selfImproveBtn.disabled = false;
+      selfImproveBtn.textContent = 'تطوير ذاتي';
+    });
+    // زر لإيقاف التطوير الذاتي (يمكنك تحسينه لاحقاً)
+    selfImproveBtn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      stopSelfImprove = true;
+      selfImproveBtn.disabled = false;
+      selfImproveBtn.textContent = 'تطوير ذاتي';
+      _createMessageElement('تم إيقاف التطوير الذاتي.', 'ai');
+      taskProgressContainer.style.display = 'none';
+    });
+
+
+
+    // دالة لحذف رسائل التطوير الذاتي السابقة من المحادثة
+    function clearSelfImproveMessages() {
+      const session = sessions[currentSessionId];
+      if (!session) return;
+      // احذف كل رسالة AI تحتوي على 'جولة تطوير ذاتي' أو 'الكود بعد تطوير الخطوة' أو 'انتهى التطوير الذاتي.'
+      session.messages = session.messages.filter(m => {
+        if (m.sender !== 'ai') return true;
+        if (/جولة تطوير ذاتي|الكود بعد تطوير الخطوة|انتهى التطوير الذاتي|فشل تنفيذ خطوة تطوير ذاتي|فشل في توليد خطة تطوير ذاتي|تم إيقاف التطوير الذاتي/.test(m.text)) return false;
+        return true;
+      });
+      saveState();
+      renderCurrentSession();
+    }
+
+    function renderChatList() {
+      // Render sidebar chat list
+      chatListSidebarList.innerHTML = '';
+      const sessionIds = Object.keys(sessions);
+      if (sessionIds.length === 0) return;
+      sessionIds.forEach(sessionId => {
+        const session = sessions[sessionId];
+        let title = session.title || 'دردشة جديدة';
+        if (!session.title) {
+          for (const msg of session.messages) {
+            if (msg.sender === 'user' && msg.text.trim()) {
+              title = msg.text.trim().slice(0, 24) + (msg.text.trim().length > 24 ? '…' : '');
+              break;
+            }
+          }
+        }
+        const item = document.createElement('button');
+        item.className = 'chat-list-item' + (sessionId === currentSessionId ? ' active' : '');
+        item.innerHTML = `<svg class="chat-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> <span>${title}</span>`;
+        item.onclick = () => {
+          if (currentSessionId !== sessionId) {
+            currentSessionId = sessionId;
+            renderCurrentSession();
+            renderChatList();
+            saveState();
+          }
+          closeChatListSidebar();
+        };
+        chatListSidebarList.appendChild(item);
+      });
+    }
+    function openChatListSidebar() {
+      chatListSidebar.classList.add('open');
+      chatListOverlay.style.display = 'block';
+    }
+    function closeChatListSidebar() {
+      chatListSidebar.classList.remove('open');
+      chatListOverlay.style.display = 'none';
+    }
+    chatListToggleBtn.addEventListener('click', openChatListSidebar);
+    chatListSidebarClose.addEventListener('click', closeChatListSidebar);
+    chatListOverlay.addEventListener('click', closeChatListSidebar);
+    chatListNewBtn.addEventListener('click', () => {
+      console.log('تم الضغط على زر دردشة جديدة في الشريط الجانبي');
+      startNewChat();
+      closeChatListSidebar();
+    });
+
+    deleteChatsBtn.addEventListener('click', () => {
+      if (confirm('هل أنت متأكد أنك تريد حذف جميع الدردشات؟ لا يمكن التراجع.')) {
+        sessions = {};
+        currentSessionId = null;
+        saveState();
+        startNewChat();
+        renderChatList();
+        closeChatListSidebar();
+      }
+    });
+
+    function init() {
+      loadState();
+      
+      chatForm.addEventListener('submit', handleSendMessage);
+      previewBtn.addEventListener('click', showPreview);
+      applyBtn.addEventListener('click', applyChanges);
+      closePreviewBtn.addEventListener('click', hidePreview);
+
+      undoBtn.addEventListener('click', undo);
+      redoBtn.addEventListener('click', redo);
+
+      // AI Discussion Modal events
+      improveBtn.addEventListener('click', () => {
+        aiDiscussionContent.innerHTML = '<div style="text-align:center; padding:2rem;">جاري بدء النقاش البرمجي بين الذكاءين الاصطناعيين...</div>';
+        aiDiscussionModal.style.display = 'flex';
+        applyImprovedBtn.style.display = 'none';
+        stopDiscussionBtn.disabled = false;
+        stopDiscussionBtn.textContent = 'إيقاف الجولات';
+        startAIDiscussionLoop();
+      });
+      closeDiscussionBtn.addEventListener('click', () => {
+        aiDiscussionModal.style.display = 'none';
+      });
+      stopDiscussionBtn.addEventListener('click', () => {
+        stopAIDiscussion = true;
+        stopDiscussionBtn.disabled = true;
+        stopDiscussionBtn.textContent = 'تم الإيقاف';
+      });
+
+      taskHeader.addEventListener('click', () => {
+        taskProgressContainer.classList.toggle('collapsed');
+      });
+      
+      promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.requestSubmit();
+        }
+      });
+
+      // Allow user to edit code manually
+      codeDisplay.addEventListener('input', () => {
+        const session = sessions[currentSessionId];
+        if (!session) return;
+        const newCode = codeDisplay.textContent;
+        session.codeHistory[session.historyIndex] = newCode;
+        saveState();
+        hljs.highlightElement(codeDisplay); // إعادة تلوين الكود بعد كل تعديل يدوي
+      });
+    }
+
+    init();
+  </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -12,23 +12,34 @@
 
   <style>
     :root {
-      --bg-color: #1e1e1e;
-      --panel-bg-color: #252526;
-      --border-color: #333333;
-      --text-color: #d4d4d4;
-      --primary-color: #2E8B57;
-      --primary-hover-color: #287C4D;
-      --input-bg-color: #3c3c3c;
-      --header-bg-color: #333333;
-      --button-bg-color: #444444;
-      --button-hover-bg-color: #555555;
-      --user-message-bg: #1A531A;
-      --ai-message-bg: #3a3d41;
-      --task-bg-color: #313132;
-      --success-color: #34d399;
-      --error-color: #f87171;
+      --bg-color: #0a0a0b;
+      --panel-bg-color: #181821;
+      --border-color: #2a2a36;
+      --text-color: #e8e8f0;
+      --primary-color: #7c3aed;
+      --primary-hover-color: #6d28d9;
+      --secondary-color: #06b6d4;
+      --secondary-hover-color: #0891b2;
+      --accent-color: #f59e0b;
+      --accent-hover-color: #d97706;
+      --input-bg-color: #1f1f2e;
+      --header-bg-color: #131318;
+      --button-bg-color: #2a2a36;
+      --button-hover-bg-color: #3a3a48;
+      --user-message-bg: linear-gradient(135deg, #7c3aed, #a855f7);
+      --ai-message-bg: linear-gradient(135deg, #1f1f2e, #2a2a36);
+      --task-bg-color: #1a1a24;
+      --success-color: #10b981;
+      --error-color: #ef4444;
+      --warning-color: #f59e0b;
       --font-family: 'IBM Plex Sans Arabic', sans-serif;
       --font-mono: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+      --glass-bg: rgba(42, 42, 54, 0.8);
+      --glass-border: rgba(255, 255, 255, 0.1);
     }
 
     * {
@@ -43,10 +54,26 @@
     }
 
     body {
-      background-color: var(--bg-color);
+      background: linear-gradient(135deg, var(--bg-color) 0%, #0f0f1a 50%, var(--bg-color) 100%);
       color: var(--text-color);
       font-family: var(--font-family);
       display: flex;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 60%, rgba(245, 158, 11, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
     }
 
     .app-container {
@@ -63,10 +90,22 @@
 
     .chat-panel {
       width: 40%;
-      background-color: var(--panel-bg-color);
-      border-left: 1px solid var(--border-color);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border-left: 1px solid var(--glass-border);
       padding: 0.75rem;
       gap: 0.75rem;
+      position: relative;
+    }
+    
+    .chat-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
     }
 
     .editor-panel {
@@ -179,24 +218,60 @@
     }
     
     .message {
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      border-radius: 16px;
       margin-bottom: 1rem;
-      max-width: 90%;
+      max-width: 85%;
       line-height: 1.6;
       white-space: pre-wrap;
+      position: relative;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s ease;
+    }
+
+    .message:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
     }
 
     .message.user {
-      background-color: var(--user-message-bg);
+      background: var(--user-message-bg);
+      color: white;
       align-self: flex-start;
       margin-left: auto;
+      border-bottom-left-radius: 6px;
+    }
+
+    .message.user::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -8px;
+      width: 0;
+      height: 0;
+      border: 8px solid transparent;
+      border-left-color: #a855f7;
+      border-bottom: none;
     }
 
     .message.ai {
-      background-color: var(--ai-message-bg);
+      background: var(--ai-message-bg);
+      border: 1px solid var(--border-color);
       align-self: flex-end;
       margin-right: auto;
+      border-bottom-right-radius: 6px;
+    }
+
+    .message.ai::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -8px;
+      width: 0;
+      height: 0;
+      border: 8px solid transparent;
+      border-right-color: var(--ai-message-bg);
+      border-bottom: none;
     }
     
     .message.loading {
@@ -216,36 +291,165 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     #chat-form {
-      display: flex;
       border-top: 1px solid var(--border-color);
-      background-color: var(--panel-bg-color);
-      padding-top: 1rem;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      padding: 1rem;
       flex-shrink: 0;
+      position: relative;
+    }
+
+    .input-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--input-bg-color);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 0.5rem;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .input-container:focus-within {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    }
+
+    .tools-button {
+      background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .tools-button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
     #prompt-input {
       flex-grow: 1;
-      background-color: var(--input-bg-color);
+      background: transparent;
       color: var(--text-color);
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border: none;
       padding: 0.75rem;
       font-family: inherit;
       resize: none;
-      margin-left: 1rem;
+      outline: none;
     }
 
-    #chat-form button {
-      background-color: var(--primary-color);
-      color: white; border: none;
-      padding: 0 1.5rem; border-radius: 6px;
-      cursor: pointer; font-family: inherit;
-      font-weight: 500;
-      transition: background-color 0.2s ease;
+    #send-button {
+      background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 50px;
+      height: 40px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-sm);
     }
 
-    #chat-form button:hover { background-color: var(--primary-hover-color); }
-    #chat-form button:disabled { background-color: var(--button-bg-color); cursor: not-allowed; }
+    #send-button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    #send-button:disabled {
+      background: var(--button-bg-color);
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Tools Dropdown */
+    .tools-dropdown {
+      position: absolute;
+      bottom: 100%;
+      left: 1rem;
+      right: 1rem;
+      background: var(--panel-bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: var(--shadow-xl);
+      backdrop-filter: blur(16px);
+      z-index: 1000;
+      margin-bottom: 0.5rem;
+      overflow: hidden;
+    }
+
+    .tools-dropdown-header {
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      color: white;
+      padding: 1rem;
+      font-weight: 600;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .tool-option {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: none;
+      border: none;
+      color: var(--text-color);
+      width: 100%;
+      text-align: right;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .tool-option:last-child {
+      border-bottom: none;
+    }
+
+    .tool-option:hover {
+      background: var(--button-bg-color);
+      transform: translateX(-4px);
+    }
+
+    .tool-icon {
+      font-size: 1.5rem;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--glass-bg);
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+
+    .tool-info {
+      flex: 1;
+      text-align: right;
+    }
+
+    .tool-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-color);
+    }
+
+    .tool-desc {
+      font-size: 0.85rem;
+      color: #888;
+      line-height: 1.3;
+    }
 
     .editor-header {
       display: flex; justify-content: space-between;
@@ -649,10 +853,74 @@
 
       <div class="messages-container" id="messages-container"></div>
       <form id="chat-form">
-<button type="submit" id="send-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
-        <textarea id="prompt-input" placeholder="اكتب طلبك هنا..." rows="1"></textarea>
+        <div class="input-container">
+          <button type="button" id="tools-btn" class="tools-button" title="أدوات التطوير">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+          </button>
+          <textarea id="prompt-input" placeholder="اكتب طلبك هنا..." rows="1"></textarea>
+          <button type="submit" id="send-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+        
+        <!-- Tools Dropdown -->
+        <div id="tools-dropdown" class="tools-dropdown" style="display: none;">
+          <div class="tools-dropdown-header">
+            <span>أدوات التطوير المتقدمة</span>
+          </div>
+          <button class="tool-option" data-mode="self-development">
+            <div class="tool-icon">🚀</div>
+            <div class="tool-info">
+              <div class="tool-name">تطوير ذاتي</div>
+              <div class="tool-desc">تحسين تلقائي مستمر للكود</div>
+            </div>
+          </button>
+          <button class="tool-option" data-mode="deep-thinking">
+            <div class="tool-icon">🧠</div>
+            <div class="tool-info">
+              <div class="tool-name">تفكير عميق</div>
+              <div class="tool-desc">تحليل شامل ومفصل للمشكلة</div>
+            </div>
+          </button>
+          <button class="tool-option" data-mode="code-research">
+            <div class="tool-icon">🔍</div>
+            <div class="tool-info">
+              <div class="tool-name">بحث في الكود</div>
+              <div class="tool-desc">تحليل وفهم الكود الموجود</div>
+            </div>
+          </button>
+          <button class="tool-option" data-mode="bug-hunter">
+            <div class="tool-icon">🐛</div>
+            <div class="tool-info">
+              <div class="tool-name">مطارد الأخطاء</div>
+              <div class="tool-desc">البحث وإصلاح الأخطاء تلقائياً</div>
+            </div>
+          </button>
+          <button class="tool-option" data-mode="performance-optimizer">
+            <div class="tool-icon">⚡</div>
+            <div class="tool-info">
+              <div class="tool-name">محسن الأداء</div>
+              <div class="tool-desc">تحسين سرعة وأداء الكود</div>
+            </div>
+          </button>
+                     <button class="tool-option" data-mode="creative-mode">
+             <div class="tool-icon">🎨</div>
+             <div class="tool-info">
+               <div class="tool-name">الوضع الإبداعي</div>
+               <div class="tool-desc">حلول إبداعية ومبتكرة</div>
+             </div>
+           </button>
+           <div style="border-top: 1px solid var(--border-color); margin: 0.5rem 0;"></div>
+           <button class="tool-option" data-mode="normal">
+             <div class="tool-icon">🔄</div>
+             <div class="tool-info">
+               <div class="tool-name">الوضع العادي</div>
+               <div class="tool-desc">العودة للوضع الافتراضي</div>
+             </div>
+           </button>
+         </div>
       </form>
     </div>
 
@@ -771,6 +1039,8 @@
     const chatForm = document.getElementById('chat-form');
     const promptInput = document.getElementById('prompt-input');
     const sendButton = document.getElementById('send-button');
+    const toolsBtn = document.getElementById('tools-btn');
+    const toolsDropdown = document.getElementById('tools-dropdown');
     const previewBtn = document.getElementById('preview-btn');
     const improveBtn = document.getElementById('improve-btn');
     const selfImproveBtn = document.getElementById('self-improve-btn');
@@ -804,6 +1074,107 @@
     let sessions = {};
     let currentSessionId = null;
     const initialCode = ''; // Start with a blank slate
+    let currentMode = 'normal'; // نمط العمل الحالي
+    let isProcessing = false; // لمنع المعالجة المتداخلة
+    let errorRetryCount = 0; // عداد إعادة المحاولة عند الأخطاء
+    const maxRetries = 3; // أقصى عدد محاولات
+    
+    // نظام الوكيل الذكي المتقدم
+    class SmartAgent {
+      constructor() {
+        this.memory = [];
+        this.context = '';
+        this.currentTask = null;
+        this.errorHistory = [];
+        this.learningData = [];
+      }
+      
+      // تحليل المشكلة وفهم السياق
+      async analyzeContext(userInput, currentCode) {
+        const analysisPrompt = `أنت وكيل ذكي متقدم. حلل طلب المستخدم والكود الحالي واستخرج المعلومات التالية:
+        
+طلب المستخدم: ${userInput}
+الكود الحالي: ${currentCode || 'فارغ'}
+السياق السابق: ${this.context}
+
+يجب أن تحدد:
+1. نوع المهمة (إنشاء، تعديل، إصلاح، تحسين)
+2. مستوى التعقيد (بسيط، متوسط، معقد)
+3. التقنيات المطلوبة
+4. المخاطر المحتملة
+5. استراتيجية التنفيذ`;
+
+        try {
+          const analysis = await callGenAI(ai => ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: analysisPrompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  task_type: { type: Type.STRING },
+                  complexity: { type: Type.STRING },
+                  technologies: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  risks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  strategy: { type: Type.STRING }
+                }
+              }
+            }
+          }));
+          return JSON.parse(analysis.text);
+        } catch (error) {
+          return this.handleError(error, 'تحليل السياق');
+        }
+      }
+      
+      // معالجة الأخطاء والتعافي التلقائي
+      handleError(error, operation) {
+        this.errorHistory.push({ error: error.message, operation, timestamp: Date.now() });
+        errorRetryCount++;
+        
+        if (errorRetryCount <= maxRetries) {
+          console.log(`محاولة إعادة تنفيذ ${operation} - المحاولة ${errorRetryCount}`);
+          return { error: true, retry: true, message: error.message };
+        } else {
+          console.log(`فشل نهائياً في ${operation} بعد ${maxRetries} محاولات`);
+          errorRetryCount = 0;
+          return { error: true, retry: false, message: error.message };
+        }
+      }
+      
+      // تعلم من التفاعلات السابقة
+      learnFromInteraction(input, output, success) {
+        this.learningData.push({
+          input,
+          output,
+          success,
+          timestamp: Date.now(),
+          mode: currentMode
+        });
+        
+        // الاحتفاظ بآخر 50 تفاعل فقط
+        if (this.learningData.length > 50) {
+          this.learningData = this.learningData.slice(-50);
+        }
+      }
+      
+      // تحسين الأداء بناء على التعلم
+      getOptimizedStrategy(taskType) {
+        const successfulInteractions = this.learningData.filter(
+          data => data.success && data.input.includes(taskType)
+        );
+        
+        if (successfulInteractions.length > 0) {
+          const lastSuccessful = successfulInteractions[successfulInteractions.length - 1];
+          return lastSuccessful.output;
+        }
+        
+        return null;
+      }
+    }
+    
+    const smartAgent = new SmartAgent();
 
     function saveState() {
         localStorage.setItem('ai-code-editor-sessions', JSON.stringify(sessions));
@@ -977,18 +1348,45 @@
 
     async function handleSendMessage(e) {
       e.preventDefault();
+      
+      if (isProcessing) {
+        _createMessageElement('جاري المعالجة... يرجى الانتظار', 'ai');
+        return;
+      }
+      
+      isProcessing = true;
+      
       // تحديث الكود الحالي من المحرر قبل أي معالجة
       const session = sessions[currentSessionId];
       if (session) {
         session.codeHistory[session.historyIndex] = codeDisplay.textContent;
         saveState();
       }
-      // طباعة الكود الحالي في الكونسول للتشخيص
-      console.log('الكود الحالي:', codeDisplay.textContent);
+      
       const prompt = promptInput.value.trim();
-      if (!prompt) return;
+      if (!prompt) {
+        isProcessing = false;
+        return;
+      }
 
       const currentCode = codeDisplay.textContent;
+      
+      // تحليل السياق بالوكيل الذكي
+      const analysis = await smartAgent.analyzeContext(prompt, currentCode);
+      if (analysis.error && !analysis.retry) {
+        _createMessageElement(`فشل في تحليل المهمة: ${analysis.message}`, 'ai');
+        isProcessing = false;
+        return;
+      }
+      
+      // عرض معلومات التحليل للمستخدم
+      if (!analysis.error) {
+        _createMessageElement(`🔍 تحليل المهمة:
+نوع المهمة: ${analysis.task_type}
+مستوى التعقيد: ${analysis.complexity}
+التقنيات المطلوبة: ${analysis.technologies?.join(', ')}
+استراتيجية التنفيذ: ${analysis.strategy}`, 'ai');
+      }
 
       _createMessageElement(prompt, 'user');
       addMessageToState(prompt, 'user');
@@ -1053,7 +1451,14 @@
             _createMessageElement(plan.answer, 'ai');
             addMessageToState(plan.answer, 'ai');
         } else if (plan.request_type === 'code_modification' && plan.tasks && plan.tasks.length > 0) {
-            await executeTaskPlan(plan.tasks, formattedHistory, prompt);
+            if (currentMode !== 'normal') {
+              await executeAdvancedTaskPlan(plan.tasks, prompt, currentMode);
+            } else {
+              await executeTaskPlan(plan.tasks, formattedHistory, prompt);
+            }
+            
+            // تسجيل نجاح التفاعل للتعلم
+            smartAgent.learnFromInteraction(prompt, 'نجح تنفيذ المهام', true);
         } else {
             const fallbackMsg = "لم أتمكن من تحديد الإجراء المطلوب. هل يمكنك إعادة صياغة طلبك؟";
              _createMessageElement(fallbackMsg, 'ai');
@@ -1063,17 +1468,36 @@
       } catch (error) {
         console.error(error);
         loadingMessage.remove();
-        const errorMsg = `حدث خطأ: ${error.message}`;
+        
+        // معالجة الخطأ بالوكيل الذكي
+        const errorHandling = smartAgent.handleError(error, 'معالجة الرسالة');
+        if (errorHandling.retry) {
+          _createMessageElement(`⚠️ حدث خطأ، جاري إعادة المحاولة... (المحاولة ${errorRetryCount})`, 'ai');
+          // إعادة تنفيذ العملية
+          setTimeout(() => handleSendMessage(e), 2000);
+          return;
+        }
+        
+        const errorMsg = `❌ حدث خطأ: ${error.message}
+        
+🔧 اقتراحات الإصلاح:
+- تحقق من اتصال الإنترنت
+- جرب إعادة صياغة الطلب
+- استخدم أحد الأدوات المتخصصة من القائمة`;
         _createMessageElement(errorMsg, 'ai');
         addMessageToState(errorMsg, 'ai');
+        
+        // تسجيل فشل التفاعل للتعلم
+        smartAgent.learnFromInteraction(prompt, error.message, false);
       } finally {
+        isProcessing = false;
         promptInput.disabled = false;
         sendButton.disabled = false;
         promptInput.focus();
       }
     }
     
-    async function executeTaskPlan(tasks, formattedHistory, originalPrompt) {
+    async function executeTaskPlan(tasks, formattedHistory, originalPrompt, specialPrompt = '') {
         // إضافة خطوة CSS تلقائية إذا لم توجد خطوة تصميم أو CSS
         const hasCssStep = tasks.some(task => /css|تصميم|تنسيق|style|ستايل/i.test(task));
         if (!hasCssStep) {
@@ -1089,7 +1513,7 @@
             updateTaskStatus(i, 'in-progress');
             const numberedCode = currentCode.split('\n').map((line, index) => `${index + 1}: ${line}`).join('\n');
             try {
-                const executionPrompt = `You are a surgical code editing AI. Your task is to modify the provided code to accomplish a specific task.\nYou MUST respond with ONLY the JSON object for the modification, without any explanation, description, or extra text.\nThe format is: { \"start_line\": number, \"end_line\": number, \"new_code\": \"string_of_new_code\" }\n- \"start_line\" and \"end_line\" are 1-based indices corresponding to the line numbers in the input.\n- To insert code at a specific line, set \"end_line\" to \"start_line - 1\". The code will be inserted before \"start_line\". For example, to insert at the beginning of the file, use start_line: 1, end_line: 0.\n- To delete lines, set \"new_code\" to an empty string \"\".\n- \"new_code\" should be a single string, with newlines represented by '\\n'.\n\nConversation History (for context):\n---\n${formattedHistory}\n---\n\nUser's original high-level request: \"${originalPrompt}\"\n\nThe specific, single task to execute now is: \"${taskDesc}\"\n\nCurrent Code (with 1-based line numbers):\n---\n${numberedCode || "(empty)"}\n---\n\nNow, provide ONLY the JSON object for the modification.`;
+                const executionPrompt = `You are a surgical code editing AI. ${specialPrompt} Your task is to modify the provided code to accomplish a specific task.\nYou MUST respond with ONLY the JSON object for the modification, without any explanation, description, or extra text.\nThe format is: { \"start_line\": number, \"end_line\": number, \"new_code\": \"string_of_new_code\" }\n- \"start_line\" and \"end_line\" are 1-based indices corresponding to the line numbers in the input.\n- To insert code at a specific line, set \"end_line\" to \"start_line - 1\". The code will be inserted before \"start_line\". For example, to insert at the beginning of the file, use start_line: 1, end_line: 0.\n- To delete lines, set \"new_code\" to an empty string \"\".\n- \"new_code\" should be a single string, with newlines represented by '\\n'.\n\nConversation History (for context):\n---\n${formattedHistory}\n---\n\nUser's original high-level request: \"${originalPrompt}\"\n\nThe specific, single task to execute now is: \"${taskDesc}\"\n\nCurrent Code (with 1-based line numbers):\n---\n${numberedCode || "(empty)"}\n---\n\nNow, provide ONLY the JSON object for the modification.`;
 
                 const response = await callGenAI(ai => ai.models.generateContent({
                     model: "gemini-2.5-flash",
@@ -1505,6 +1929,72 @@
       }
     });
 
+    // وظائف الأدوات المتخصصة
+    function toggleToolsDropdown() {
+      const isVisible = toolsDropdown.style.display !== 'none';
+      toolsDropdown.style.display = isVisible ? 'none' : 'block';
+    }
+    
+    function selectTool(mode) {
+      currentMode = mode;
+      toolsDropdown.style.display = 'none';
+      
+      const modeDescriptions = {
+        'self-development': 'تم تفعيل وضع التطوير الذاتي 🚀',
+        'deep-thinking': 'تم تفعيل وضع التفكير العميق 🧠',
+        'code-research': 'تم تفعيل وضع البحث في الكود 🔍',
+        'bug-hunter': 'تم تفعيل وضع مطارد الأخطاء 🐛',
+        'performance-optimizer': 'تم تفعيل وضع محسن الأداء ⚡',
+        'creative-mode': 'تم تفعيل الوضع الإبداعي 🎨',
+        'normal': 'تم الرجوع للوضع العادي 🔄'
+      };
+      
+      _createMessageElement(modeDescriptions[mode] || 'تم تفعيل وضع جديد', 'ai');
+      
+      // تغيير لون زر الأدوات ليعكس الوضع النشط
+      if (mode === 'normal') {
+        toolsBtn.style.background = 'linear-gradient(135deg, var(--secondary-color), var(--primary-color))';
+      } else {
+        toolsBtn.style.background = `linear-gradient(135deg, ${getColorForMode(mode)})`;
+      }
+    }
+    
+    function getColorForMode(mode) {
+      const colors = {
+        'self-development': '#f59e0b, #d97706',
+        'deep-thinking': '#7c3aed, #6d28d9',
+        'code-research': '#06b6d4, #0891b2',
+        'bug-hunter': '#ef4444, #dc2626',
+        'performance-optimizer': '#10b981, #059669',
+        'creative-mode': '#ec4899, #db2777'
+      };
+      return colors[mode] || '#7c3aed, #6d28d9';
+    }
+    
+    // تحسين دالة executeTaskPlan بناء على الوضع المحدد
+    async function executeAdvancedTaskPlan(tasks, prompt, mode) {
+      const modePrompts = {
+        'deep-thinking': 'أنت خبير متخصص في التحليل العميق. قم بتحليل كل خطوة بعمق شديد واقترح أفضل الحلول.',
+        'bug-hunter': 'أنت خبير في اكتشاف الأخطاء. ابحث عن أي مشاكل محتملة في كل خطوة وأصلحها.',
+        'performance-optimizer': 'أنت خبير في تحسين الأداء. ركز على تحسين سرعة وكفاءة الكود في كل خطوة.',
+        'creative-mode': 'أنت خبير إبداعي. اقترح حلولاً مبتكرة وجميلة في كل خطوة.',
+        'code-research': 'أنت باحث في الكود. اشرح كل جزء بتفصيل وقدم معلومات شاملة.',
+        'self-development': 'أنت نظام تطوير ذاتي. حسن الكود باستمرار واقترح تطويرات إضافية.'
+      };
+      
+      const specialPrompt = modePrompts[mode] || '';
+      
+      // إضافة رسالة تشير إلى الوضع المختار
+      _createMessageElement(`🎯 تم تنشيط ${mode === 'deep-thinking' ? 'التفكير العميق' : 
+                           mode === 'bug-hunter' ? 'مطارد الأخطاء' : 
+                           mode === 'performance-optimizer' ? 'محسن الأداء' : 
+                           mode === 'creative-mode' ? 'الوضع الإبداعي' : 
+                           mode === 'code-research' ? 'الباحث في الكود' : 
+                           'التطوير الذاتي'}...`, 'ai');
+      
+      return executeTaskPlan(tasks, '', prompt, specialPrompt);
+    }
+    
     function init() {
       loadState();
       
@@ -1512,6 +2002,24 @@
       previewBtn.addEventListener('click', showPreview);
       applyBtn.addEventListener('click', applyChanges);
       closePreviewBtn.addEventListener('click', hidePreview);
+      
+      // أحداث الأدوات
+      toolsBtn.addEventListener('click', toggleToolsDropdown);
+      
+      // إخفاء القائمة عند النقر خارجها
+      document.addEventListener('click', (e) => {
+        if (!toolsBtn.contains(e.target) && !toolsDropdown.contains(e.target)) {
+          toolsDropdown.style.display = 'none';
+        }
+      });
+      
+      // تحديد الأدوات
+      document.querySelectorAll('.tool-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const mode = option.dataset.mode;
+          selectTool(mode);
+        });
+      });
 
       undoBtn.addEventListener('click', undo);
       redoBtn.addEventListener('click', redo);
